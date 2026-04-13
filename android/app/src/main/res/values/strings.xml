@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Legal Dost</string>
+    <string name="title_activity_main">Legal Dost</string>
+    <string name="package_name">com.legaldost.app</string>
+    <string name="custom_url_scheme">com.legaldost.app</string>
+</resources>
