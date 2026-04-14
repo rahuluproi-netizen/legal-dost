@@ -7,7 +7,7 @@ import { saveAs } from 'file-saver';
 import './index.css';
 import SettingsView from './SettingsView';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API = import.meta.env.VITE_API_URL || 'https://legaldost-6rq2.onrender.com/api';
 
 const INDIAN_STATES = [
   'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 
