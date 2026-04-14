@@ -1,0 +1,9 @@
+# Query: begin revi
+# ContextLines: 1
+
+1 result - 1 file
+
+frontend\src\App.jsx:
+  253                  <button type="submit" className="btn-primary" disabled={loading}>
+  254:                   {loading ? 'Analyzing...' : 'search'}
+  255                  </button>

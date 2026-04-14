@@ -7,11 +7,14 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          pdf: ['jspdf'],
-          doc: ['docx'],
-          icons: ['lucide-react']
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            if (id.includes('react')) return 'vendor-react';
+            if (id.includes('jspdf')) return 'vendor-pdf';
+            if (id.includes('docx')) return 'vendor-doc';
+            if (id.includes('lucide')) return 'vendor-icons';
+            return 'vendor';
+          }
         }
       }
     }
