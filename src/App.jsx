@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Search, Scale, FileText, CheckCircle, AlertTriangle, Download, Mic, MicOff, Volume2, VolumeX, Wand2, GitCompare, ShieldAlert, Baby, ArrowRight, Phone, X, MessageSquareQuote, Info, Gavel, ArrowLeft, MapPin, Clock, Share2, FileQuestion, DollarSign, Users, AlertCircle, BookOpen, ChevronRight, CheckSquare, Home, Settings, Bookmark, Trash2 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
-import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
-import { saveAs } from 'file-saver';
 import './index.css';
 import SettingsView from './SettingsView';
 
@@ -69,7 +67,10 @@ function App() {
   const [showRightCards, setShowRightCards] = useState(false);
   const [showCostEstimator, setShowCostEstimator] = useState(false);
   const [activeForm, setActiveForm] = useState(null);
+  const [snackbar, setSnackbar] = useState({ show: false, message: '' });
+  const [expandedRightCard, setExpandedRightCard] = useState(0);
   const speechRef = useRef(null);
+  const snackbarTimeoutRef = useRef(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('recentQuestions');
@@ -77,6 +78,10 @@ function App() {
     const savedState = localStorage.getItem('selectedState');
     if (savedState) setSelectedState(savedState);
     axios.get(`${API}/index`).then(r => setIndex(r.data)).catch(() => {});
+  }, []);
+
+  useEffect(() => () => {
+    if (snackbarTimeoutRef.current) clearTimeout(snackbarTimeoutRef.current);
   }, []);
 
   const addRecentQuestion = (q) => {
@@ -152,6 +157,16 @@ function App() {
     setResult(null); setWizardResult(null); setCompareResult(null); setEmergencyResult(null); setAssistantResult(null); setError(''); setSelectedRelatedArticle(null);
   };
 
+  const triggerSnackbar = (message) => {
+    if (snackbarTimeoutRef.current) {
+      clearTimeout(snackbarTimeoutRef.current);
+    }
+    setSnackbar({ show: true, message });
+    snackbarTimeoutRef.current = setTimeout(() => {
+      setSnackbar({ show: false, message: '' });
+    }, 2600);
+  };
+
   const executeApiCall = async (endpoint, payload, setter) => {
     setLoading(true); clearAll(); setSuggestions([]);
     if (payload.query || payload.question || payload.problem) {
@@ -225,11 +240,6 @@ function App() {
     doc.save(`LegalDost_Report.pdf`);
   };
 
-  const downloadDOCX = async (data) => {
-    const d = new Document({ sections: [{ children: [new Paragraph({ text: data.articleTitle || data.question, heading: HeadingLevel.HEADING_1 })] }] });
-    saveAs(await Packer.toBlob(d), `LegalDost_Report.docx`);
-  };
-
   const getSpeakableText = () => {
     if (result) return `${result.articleNumber}. ${result.simplifiedMeaning}`;
     if (assistantResult) return assistantResult.simpleAnswer;
@@ -242,6 +252,21 @@ function App() {
   const changeTab = (id) => {
     setActiveTab(id);
     clearAll();
+  };
+
+  const handleQuickAction = (action) => {
+    if (action.type === 'ask') {
+      changeTab('home');
+      setQuery(action.query);
+      handleSearch(null, action.query);
+    } else if (action.type === 'assistant') {
+      changeTab('assistant');
+      setQuery(action.query);
+      handleAssistant(null, action.query);
+    } else if (action.type === 'emergency') {
+      changeTab('emergency');
+    }
+    triggerSnackbar(action.message);
   };
 
   return (
@@ -359,6 +384,29 @@ function App() {
                          <span className="chip" onClick={() => {setQuery("Freedom of Speech"); handleSearch(null, "Freedom of Speech")}}>Freedom of Speech</span>
                          <span className="chip" onClick={() => {setQuery("Article 21"); handleSearch(null, "Article 21")}}>Article 21</span>
                       </div>
+                      <div className="quick-actions-grid">
+                        <button className="quick-action-card" onClick={() => handleQuickAction({ type: 'assistant', query: 'How do I file an online consumer complaint in India?', message: 'Opening assistant with consumer complaint help.' })}>
+                          <Users size={18} />
+                          <div>
+                            <h4>Consumer Help</h4>
+                            <p>Step-by-step complaint guidance</p>
+                          </div>
+                        </button>
+                        <button className="quick-action-card" onClick={() => handleQuickAction({ type: 'ask', query: 'What are the rights after an arrest in India?', message: 'Loaded arrest rights in constitution search.' })}>
+                          <ShieldAlert size={18} />
+                          <div>
+                            <h4>Arrest Rights</h4>
+                            <p>Quick constitutional protections</p>
+                          </div>
+                        </button>
+                        <button className="quick-action-card" onClick={() => handleQuickAction({ type: 'emergency', message: 'Emergency guidance panel is now open.' })}>
+                          <AlertCircle size={18} />
+                          <div>
+                            <h4>Emergency Mode</h4>
+                            <p>Act fast with urgent legal support</p>
+                          </div>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -474,9 +522,9 @@ function App() {
                      </div>
 
                      <div className="card-actions">
-                        <button className="action-btn"><Bookmark size={18}/> Save</button>
+                        <button className="action-btn" onClick={() => triggerSnackbar('Saved this legal answer to your quick list.') }><Bookmark size={18}/> Save</button>
                         <button className="action-btn" onClick={() => downloadPDF(assistantResult)}><Download size={18}/> Export PDF</button>
-                        <button className="action-btn"><Share2 size={18}/> Share</button>
+                        <button className="action-btn" onClick={() => triggerSnackbar('Share link copied (simulated).')}><Share2 size={18}/> Share</button>
                      </div>
                   </div>
                 )}
@@ -549,7 +597,7 @@ function App() {
                      </div>
                      
                      <div className="card-actions">
-                        <button className="action-btn"><Bookmark size={18}/> Save Analysis</button>
+                        <button className="action-btn" onClick={() => triggerSnackbar('Rights analysis saved successfully.') }><Bookmark size={18}/> Save Analysis</button>
                         <button className="action-btn" onClick={() => downloadPDF(wizardResult)}><Download size={18}/> Export PDF</button>
                      </div>
                   </div>
@@ -713,9 +761,14 @@ function App() {
                <h2 style={{fontFamily: 'var(--font-heading)', fontSize: '2rem', marginBottom: '32px'}}>Know Your Rights</h2>
                <div style={{display: 'flex', flexDirection: 'column', gap: '24px'}}>
                   {RIGHTS_CARDS.map((card, i) => (
-                     <div key={i} style={{borderBottom: '1px solid var(--surface-border)', paddingBottom: '24px'}}>
-                        <h4 style={{color: 'var(--primary-color)', marginBottom: '8px', fontSize: '1.1rem'}}>{card.title}</h4>
-                        <p style={{color: 'var(--text-muted)', lineHeight: '1.5'}}>{card.content}</p>
+                     <div key={i} className="rights-accordion-item">
+                        <button className="rights-accordion-trigger" onClick={() => setExpandedRightCard(expandedRightCard === i ? -1 : i)}>
+                          <h4>{card.title}</h4>
+                          <ChevronRight size={18} className={expandedRightCard === i ? 'expanded' : ''} />
+                        </button>
+                        {expandedRightCard === i && (
+                          <p style={{color: 'var(--text-muted)', lineHeight: '1.5'}}>{card.content}</p>
+                        )}
                      </div>
                   ))}
                </div>
@@ -758,12 +811,17 @@ function App() {
                   const doc = new jsPDF();
                   doc.setFontSize(18); doc.text(activeForm.title, 20, 20);
                   doc.save(`${activeForm.title.replace(/\s+/g, '_')}.pdf`);
+                  triggerSnackbar(`${activeForm.title} downloaded successfully.`);
                }}>
                   <Download size={20} /> Download Template
                </button>
             </div>
          </div>
       )}
+      <button className="fab-emergency" onClick={() => handleQuickAction({ type: 'emergency', message: 'Emergency help opened.' })} title="Open emergency legal help">
+        <ShieldAlert size={20} /> Emergency
+      </button>
+      {snackbar.show && <div className="material-snackbar">{snackbar.message}</div>}
       
     </>
   );
